@@ -1,0 +1,251 @@
+import { useCallback, useEffect, useState } from 'react';
+import { AlertCircle, ArrowRight, Plus, RefreshCw } from 'lucide-react';
+import { adminApi } from '../lib/api';
+import { billingLabel, daysUntil, formatDate, formatDateTime, planLabel } from '../lib/format';
+import type { DashboardSummary } from '../types/license';
+import { StatusBadge } from '../components/StatusBadge';
+
+interface DashboardPageProps {
+  onNavigateCreate: () => void;
+  onSelectLicense: (keyHash: string) => void;
+  onNavigateLicenses: () => void;
+}
+
+export function DashboardPage({
+  onNavigateCreate,
+  onSelectLicense,
+  onNavigateLicenses,
+}: DashboardPageProps) {
+  const [summary, setSummary] = useState<DashboardSummary | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await adminApi.getDashboardSummary();
+      setSummary(data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load dashboard.');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  if (loading && !summary) {
+    return (
+      <div className="space-y-6">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          {[1, 2, 3, 4].map((n) => (
+            <div key={n} className="h-24 bg-white border border-slate-200 rounded-xl animate-pulse" />
+          ))}
+        </div>
+        <div className="h-64 bg-white border border-slate-200 rounded-xl animate-pulse" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-semibold text-slate-900 tracking-tight">Overview</h1>
+          <p className="text-sm text-slate-600 mt-1">
+            License counts, upcoming expirations, and recent device activations across KamChi.
+          </p>
+        </div>
+        <div className="flex items-center gap-3 shrink-0">
+          <button
+            type="button"
+            onClick={() => void load()}
+            disabled={loading}
+            className="inline-flex items-center gap-2 px-3.5 py-2.5 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors whitespace-nowrap"
+          >
+            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+            Refresh
+          </button>
+          <button
+            type="button"
+            onClick={onNavigateCreate}
+            className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-white bg-teal-700 hover:bg-teal-800 rounded-lg transition-colors whitespace-nowrap"
+          >
+            <Plus className="w-4 h-4" />
+            Create License
+          </button>
+        </div>
+      </div>
+
+      {error && (
+        <div className="flex items-start gap-3 p-4 rounded-xl border border-red-200 bg-red-50 text-red-900">
+          <AlertCircle className="w-5 h-5 shrink-0 mt-0.5 text-red-700" />
+          <div className="text-sm leading-relaxed">{error}</div>
+        </div>
+      )}
+
+      {summary && (
+        <>
+          {/* Counts by status */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="bg-white border border-slate-200 rounded-xl p-5">
+              <div className="text-xs font-medium text-slate-500">Total Licenses</div>
+              <div className="mt-2 text-3xl font-semibold text-slate-900 tabular-nums font-mono">
+                {summary.total}
+              </div>
+              <div className="mt-2 text-xs text-slate-500">
+                Free {summary.byPlan.free} · Pro {summary.byPlan.pro} · Biz {summary.byPlan.business}
+              </div>
+            </div>
+
+            <div className="bg-white border border-slate-200 rounded-xl p-5">
+              <div className="text-xs font-medium text-slate-500">Active</div>
+              <div className="mt-2 text-3xl font-semibold text-emerald-700 tabular-nums font-mono">
+                {summary.byStatus.active}
+              </div>
+              <div className="mt-2 text-xs text-slate-500">Valid and ready for devices</div>
+            </div>
+
+            <div className="bg-white border border-slate-200 rounded-xl p-5">
+              <div className="text-xs font-medium text-slate-500">Expiring in 14 Days</div>
+              <div className="mt-2 text-3xl font-semibold text-amber-700 tabular-nums font-mono">
+                {summary.expiringNext14Days.length}
+              </div>
+              <div className="mt-2 text-xs text-slate-500">Active keys nearing renewal</div>
+            </div>
+
+            <div className="bg-white border border-slate-200 rounded-xl p-5">
+              <div className="text-xs font-medium text-slate-500">Expired / Revoked</div>
+              <div className="mt-2 text-3xl font-semibold text-slate-900 tabular-nums font-mono">
+                {summary.byStatus.expired + summary.byStatus.revoked}
+              </div>
+              <div className="mt-2 text-xs text-slate-500">
+                {summary.byStatus.expired} expired · {summary.byStatus.revoked} revoked
+              </div>
+            </div>
+          </div>
+
+          {/* Plan breakdown strip */}
+          <div className="bg-white border border-slate-200 rounded-xl p-5">
+            <div className="flex items-center justify-between gap-4 mb-4">
+              <h2 className="text-base font-semibold text-slate-900">Distribution by Plan</h2>
+              <button
+                type="button"
+                onClick={onNavigateLicenses}
+                className="inline-flex items-center gap-1.5 text-sm font-medium text-teal-700 hover:text-teal-800 whitespace-nowrap"
+              >
+                Browse all licenses
+                <ArrowRight className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2 border-t border-slate-100">
+              {(['pro', 'business', 'free'] as const).map((plan) => (
+                <div key={plan} className="flex items-baseline justify-between py-2">
+                  <span className="text-sm font-medium text-slate-700">{planLabel(plan)}</span>
+                  <span className="text-lg font-semibold font-mono tabular-nums text-slate-900">
+                    {summary.byPlan[plan]}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Two columns: Expiring in 14 days & Recent activations */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <section className="bg-white border border-slate-200 rounded-xl overflow-hidden">
+              <div className="px-5 py-4 border-b border-slate-200 flex items-center justify-between">
+                <h2 className="text-base font-semibold text-slate-900">Expiring in Next 14 Days</h2>
+                <span className="text-xs font-mono tabular-nums text-slate-500">
+                  {summary.expiringNext14Days.length} keys
+                </span>
+              </div>
+
+              {summary.expiringNext14Days.length === 0 ? (
+                <div className="p-8 text-center text-sm text-slate-500">
+                  No active licenses expire within the next 14 days.
+                </div>
+              ) : (
+                <div className="divide-y divide-slate-100">
+                  {summary.expiringNext14Days.map((lic) => {
+                    const left = daysUntil(lic.expiresAt);
+                    return (
+                      <button
+                        key={lic.keyHash}
+                        type="button"
+                        onClick={() => onSelectLicense(lic.keyHash)}
+                        className="w-full text-left px-5 py-3.5 hover:bg-slate-50 transition-colors flex items-center justify-between gap-4"
+                      >
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="font-mono text-xs font-medium text-slate-700">
+                              {lic.keyHashPrefix}
+                            </span>
+                            <span className="text-sm font-medium text-slate-900 truncate">
+                              {lic.buyerContact || 'No contact'}
+                            </span>
+                          </div>
+                          <div className="text-xs text-slate-500 mt-0.5">
+                            {planLabel(lic.plan)} · {billingLabel(lic.billing)} · Expires{' '}
+                            {formatDate(lic.expiresAt)}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-3 shrink-0">
+                          <span className="text-xs font-mono tabular-nums font-medium text-amber-700">
+                            {left !== null ? `${left}d left` : ''}
+                          </span>
+                          <StatusBadge status={lic.status} />
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </section>
+
+            <section className="bg-white border border-slate-200 rounded-xl overflow-hidden">
+              <div className="px-5 py-4 border-b border-slate-200 flex items-center justify-between">
+                <h2 className="text-base font-semibold text-slate-900">Recent Device Activations</h2>
+                <span className="text-xs font-mono tabular-nums text-slate-500">
+                  {summary.recentActivations.length} recent
+                </span>
+              </div>
+
+              {summary.recentActivations.length === 0 ? (
+                <div className="p-8 text-center text-sm text-slate-500">
+                  No device activations recorded yet.
+                </div>
+              ) : (
+                <div className="divide-y divide-slate-100">
+                  {summary.recentActivations.map((act) => (
+                    <button
+                      key={`${act.keyHash}-${act.deviceId}`}
+                      type="button"
+                      onClick={() => onSelectLicense(act.keyHash)}
+                      className="w-full text-left px-5 py-3.5 hover:bg-slate-50 transition-colors flex items-center justify-between gap-4"
+                    >
+                      <div className="min-w-0">
+                        <div className="text-sm font-medium text-slate-900 truncate">
+                          {act.label || act.deviceId}
+                        </div>
+                        <div className="text-xs text-slate-500 mt-0.5 truncate">
+                          <span className="font-mono">{act.keyHashPrefix}</span> ·{' '}
+                          {planLabel(act.plan)} · {act.buyerContact || 'No contact'}
+                        </div>
+                      </div>
+                      <div className="text-xs text-slate-500 tabular-nums shrink-0">
+                        {formatDateTime(act.activatedAt)}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </section>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}

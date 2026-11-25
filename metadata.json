@@ -1,0 +1,6 @@
+{
+  "name": "KamChi License Admin",
+  "description": "Internal admin tool for issuing, extending, revoking, and auditing KamChi (កម្ចី) license keys via Firebase Cloud Functions.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
