@@ -1,6 +1,6 @@
 {
   "projects": {
-    "default": "YOUR_KAMCHI_FIREBASE_PROJECT_ID"
+    "default": "kamchi-9de5e"
   },
   "targets": {
     "YOUR_KAMCHI_FIREBASE_PROJECT_ID": {

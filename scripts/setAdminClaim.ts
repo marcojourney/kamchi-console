@@ -20,7 +20,7 @@ import { getAuth } from 'firebase-admin/auth';
 // =============================================================================
 // [FILL IN] Your KamChi mobile app Firebase Project ID & allowed admin emails
 // =============================================================================
-const FIREBASE_PROJECT_ID = process.env.FIREBASE_PROJECT_ID || 'YOUR_KAMCHI_FIREBASE_PROJECT_ID';
+const FIREBASE_PROJECT_ID = 'kamchi-9de5e';//process.env.FIREBASE_PROJECT_ID || 'YOUR_KAMCHI_FIREBASE_PROJECT_ID';
 const ALLOWED_ADMIN_EMAILS: string[] = (
   process.env.ADMIN_EMAILS || 'owner@example.com,trusted-admin@example.com'
 )

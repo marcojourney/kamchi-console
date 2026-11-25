@@ -33,6 +33,9 @@ const ENFORCE_APP_CHECK = process.env.ENFORCE_APP_CHECK !== 'false';
 
 const CALLABLE_OPTIONS = {
   region: REGION,
+  // Let browser preflight requests reach the callable handler, including Vercel.
+  invoker: 'public' as const,
+  cors: true,
   enforceAppCheck: ENFORCE_APP_CHECK,
   secrets: [LICENSE_PEPPER],
 };

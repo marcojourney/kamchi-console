@@ -6,3 +6,12 @@ coverage/
 *.log
 .env*
 !.env.example
+
+# Google Cloud credentials and private keys must stay local.
+service-account.json
+*-service-account.json
+service-account-*.json
+*-service-account-*.json
+application_default_credentials.json
+*.pem
+*.key
