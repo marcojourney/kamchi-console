@@ -16,6 +16,8 @@ const ACTION_OPTIONS = [
   'removeDevice',
   'exportLicensesCsv',
   'expireOverdueLicenses',
+  'updatePepper',
+  'importBackup',
 ] as const;
 
 export function AuditLogPage() {
