@@ -6,6 +6,7 @@ export function formatDate(iso: string | null): string {
     year: 'numeric',
     month: 'short',
     day: 'numeric',
+    timeZone: 'UTC',
   });
 }
 
@@ -30,8 +31,7 @@ export function daysUntil(iso: string | null): number | null {
 
 export function planLabel(plan: string): string {
   if (plan === 'business') return 'Business';
-  if (plan === 'pro') return 'Pro';
-  return 'Free';
+  return 'Pro';
 }
 
 export function billingLabel(billing: string): string {

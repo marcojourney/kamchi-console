@@ -1,13 +1,14 @@
 import { useState } from 'react';
 import {
   ClipboardList,
-  HardDrive,
+  KeyRound,
   LayoutDashboard,
   ListChecks,
   PlusCircle,
   Settings,
 } from 'lucide-react';
 import { ErrorBoundary } from './components/ErrorBoundary';
+import { adminApi } from './lib/api';
 import { AuditLogPage } from './pages/AuditLogPage';
 import { CreateLicensePage } from './pages/CreateLicensePage';
 import { DashboardPage } from './pages/DashboardPage';
@@ -18,20 +19,21 @@ import { SettingsPage } from './pages/SettingsPage';
 type Route =
   | { page: 'dashboard' }
   | { page: 'licenses' }
-  | { page: 'detail'; keyHash: string }
+  | { page: 'detail'; keyIdHex: string }
   | { page: 'create' }
   | { page: 'audit' }
   | { page: 'settings' };
 
 function AdminShell() {
   const [route, setRoute] = useState<Route>({ page: 'dashboard' });
+  const [signingStatus, setSigningStatus] = useState(() => adminApi.getSigningKeyStatus());
 
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { id: 'licenses', label: 'Licenses', icon: ListChecks },
-    { id: 'create', label: 'Create', icon: PlusCircle },
+    { id: 'licenses', label: 'Issued Keys', icon: ListChecks },
+    { id: 'create', label: 'Issue Key', icon: PlusCircle },
     { id: 'audit', label: 'Audit Log', icon: ClipboardList },
-    { id: 'settings', label: 'Backup', icon: Settings },
+    { id: 'settings', label: 'Key & Backup', icon: Settings },
   ] as const;
 
   const activeNav = route.page === 'detail' ? 'licenses' : route.page;
@@ -46,7 +48,7 @@ function AdminShell() {
             onClick={() => setRoute({ page: 'dashboard' })}
             className="text-base font-bold tracking-tight text-slate-900 whitespace-nowrap"
           >
-            KamChi Admin
+            KamChi Console
           </button>
         </div>
 
@@ -72,9 +74,16 @@ function AdminShell() {
           })}
         </nav>
 
-        <div className="p-4 border-t border-slate-200 flex items-center gap-2 text-xs text-slate-500">
-          <HardDrive className="w-3.5 h-3.5 shrink-0 text-teal-700" />
-          <span>Stored in local browser</span>
+        <div className="p-4 border-t border-slate-200 text-xs space-y-1">
+          <div className="flex items-center gap-2 font-medium text-slate-700">
+            <KeyRound className="w-3.5 h-3.5 shrink-0 text-teal-700" />
+            <span>{signingStatus.hasKey ? 'Ed25519 Key Ready' : 'No Signing Key'}</span>
+          </div>
+          {signingStatus.publicKeyHex && (
+            <div className="font-mono text-[11px] text-slate-500 truncate">
+              {signingStatus.publicKeyHex.slice(0, 16)}...
+            </div>
+          )}
         </div>
       </aside>
 
@@ -84,10 +93,10 @@ function AdminShell() {
         <header className="h-14 lg:h-16 bg-white border-b border-slate-200 px-4 sm:px-6 flex items-center justify-between gap-4 sticky top-0 z-30">
           <div className="flex items-center gap-3 min-w-0">
             <span className="lg:hidden font-bold text-slate-900 whitespace-nowrap">
-              KamChi Admin
+              KamChi Console
             </span>
             <span className="hidden lg:inline text-sm text-slate-500 whitespace-nowrap">
-              KamChi (កម្ចី) · Local Browser License Vault
+              KamChi (កម្ចី) · Offline Ed25519 License Generator
             </span>
           </div>
 
@@ -95,10 +104,10 @@ function AdminShell() {
             <button
               type="button"
               onClick={() => setRoute({ page: 'settings' })}
-              className="lg:hidden inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-700 border border-slate-300 rounded-lg whitespace-nowrap"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-700 border border-slate-300 hover:bg-slate-50 rounded-lg whitespace-nowrap"
             >
-              <Settings className="w-3.5 h-3.5" />
-              Backup
+              <KeyRound className="w-3.5 h-3.5 text-teal-700" />
+              {signingStatus.hasKey ? 'Signing Key Ready' : 'Set Signing Key'}
             </button>
           </div>
         </header>
@@ -108,29 +117,35 @@ function AdminShell() {
             <DashboardPage
               onNavigateCreate={() => setRoute({ page: 'create' })}
               onNavigateLicenses={() => setRoute({ page: 'licenses' })}
-              onSelectLicense={(keyHash) => setRoute({ page: 'detail', keyHash })}
+              onSelectLicense={(keyIdHex) => setRoute({ page: 'detail', keyIdHex })}
+              onOpenSigningSettings={() => setRoute({ page: 'settings' })}
             />
           )}
           {route.page === 'licenses' && (
             <LicensesPage
               onNavigateCreate={() => setRoute({ page: 'create' })}
-              onSelectLicense={(keyHash) => setRoute({ page: 'detail', keyHash })}
+              onSelectLicense={(keyIdHex) => setRoute({ page: 'detail', keyIdHex })}
             />
           )}
           {route.page === 'detail' && (
             <LicenseDetailPage
-              keyHash={route.keyHash}
+              keyIdHex={route.keyIdHex}
               onBack={() => setRoute({ page: 'licenses' })}
-              onSelectLicense={(keyHash) => setRoute({ page: 'detail', keyHash })}
+              onSelectLicense={(keyIdHex) => setRoute({ page: 'detail', keyIdHex })}
             />
           )}
           {route.page === 'create' && (
             <CreateLicensePage
-              onViewDetail={(keyHash) => setRoute({ page: 'detail', keyHash })}
+              onViewDetail={(keyIdHex) => setRoute({ page: 'detail', keyIdHex })}
+              onOpenSigningSettings={() => setRoute({ page: 'settings' })}
             />
           )}
           {route.page === 'audit' && <AuditLogPage />}
-          {route.page === 'settings' && <SettingsPage />}
+          {route.page === 'settings' && (
+            <SettingsPage
+              onSigningKeyChanged={() => setSigningStatus(adminApi.getSigningKeyStatus())}
+            />
+          )}
         </main>
       </div>
 
@@ -152,7 +167,7 @@ function AdminShell() {
               }`}
             >
               <Icon className="w-4 h-4" />
-              <span>{item.label}</span>
+              <span className="truncate max-w-full px-1">{item.label}</span>
             </button>
           );
         })}

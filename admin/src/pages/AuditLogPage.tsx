@@ -7,16 +7,16 @@ import type { AuditLogEntry } from '../types/license';
 const ACTION_OPTIONS = [
   'all',
   'createLicense',
-  'extendLicense',
-  'changePlan',
+  'renewLicense',
+  'reissueLicense',
   'revokeLicense',
   'reinstateLicense',
-  'reissueLicense',
-  'resetDevices',
-  'removeDevice',
+  'updateBuyerMeta',
+  'generateKeypair',
+  'importSigningKey',
+  'clearSigningKey',
   'exportLicensesCsv',
   'expireOverdueLicenses',
-  'updatePepper',
   'importBackup',
 ] as const;
 
@@ -61,7 +61,7 @@ export function AuditLogPage() {
         <div>
           <h1 className="text-2xl font-semibold text-slate-900 tracking-tight">Audit Log</h1>
           <p className="text-sm text-slate-600 mt-1">
-            Server-written record of every admin action and scheduled expiration run.
+            Chronological log of signing key setup, key issuances, renewals, and backups.
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -121,10 +121,10 @@ export function AuditLogPage() {
                     </span>
                     <span className="text-slate-300" aria-hidden="true">·</span>
                     <span className="font-mono text-xs text-slate-600">
-                      {entry.targetKeyHashPrefix}
+                      {entry.targetKeyIdHex}
                     </span>
                     <span className="text-slate-300" aria-hidden="true">·</span>
-                    <span className="text-xs text-slate-600">{entry.actorEmail}</span>
+                    <span className="text-xs text-slate-600">{entry.actor}</span>
                   </div>
                   <p className="text-sm text-slate-800 break-words">{entry.details}</p>
                 </div>
